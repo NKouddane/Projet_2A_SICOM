@@ -19,24 +19,35 @@ void loop(){
 }
 
 void advance(int data) {
-   int spe = 100;
+   int spe = 150;
    if (data == 1){
     carAdvance(spe,spe);
    }
    if (data == 2){
     carBack(spe, spe);
     
+   if(data == 9){
+    carStop();
+    delay(500);
+    carAdvance(spe,spe);
+    delay(1000);
+   }
+    
     
    }
    if (data == 3){
-    carTurnLeft(160,160);
+    carTurnLeft(180,180);
+    
+   
    }
    if (data == 4){
-    carTurnRight(160,160);
+    carTurnRight(180,180);
+    
    }
    if (data == 0 ){
     carStop();
-    exit(0);
+    delay(3000);
+    
    }
 }
 

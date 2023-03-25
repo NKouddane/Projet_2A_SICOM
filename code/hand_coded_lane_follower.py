@@ -8,6 +8,7 @@ import numpy.ma as ma
 import serial
 import struct
 from matplotlib.pyplot import *
+from panneaux import panneaux
 
 _SHOW_IMAGE = False #write True to see all frames
 
@@ -23,10 +24,9 @@ class HandCodedLaneFollower(object):
     def follow_lane(self, frame):
         # Main entry point of the lane follower
         show_image("orig", frame)
-        
+       
         lane_lines, frame = detect_lane(frame)
         final_frame = self.steer(frame, lane_lines)
-
         return final_frame
 
     def steer(self, frame, lane_lines):
@@ -39,13 +39,13 @@ class HandCodedLaneFollower(object):
         self.curr_steering_angle = stabilize_steering_angle(self.curr_steering_angle, new_steering_angle, len(lane_lines))
 
         if self.car is not None:
-            #direction
+            #direction sent to arduino
             print(self.curr_steering_angle)
-            if self.curr_steering_angle < 75:
+            if self.curr_steering_angle < 80:
                 data = ser.write(struct.pack('>B', 3))
                 line = ser.readline().decode('utf-8').rstrip()
                 print(line)
-            elif ( 75 <= self.curr_steering_angle <= 105 ):
+            elif ( 80 <= self.curr_steering_angle <= 100 ):
                 data = ser.write(struct.pack('>B', 1))
                 line = ser.readline().decode('utf-8').rstrip()
                 print(line)
@@ -53,7 +53,6 @@ class HandCodedLaneFollower(object):
                 data = ser.write(struct.pack('>B', 4))
                 line = ser.readline().decode('utf-8').rstrip()
                 print(line)
-            
             
         curr_heading_image = display_heading_line(frame, self.curr_steering_angle)
         show_image("heading", curr_heading_image)
@@ -86,18 +85,27 @@ def detect_lane(frame):
     
 
 def detect_edges(frame):
-    # filter for red lane lines
+    # filter for red lane linesq
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     show_image("hsv", hsv)
-    # Define range of white color in HSV
-    lower_red = np.array([155, 25, 50])
-    upper_red = np.array([179, 255, 255])
-    lower_yellow = np.array([25, 50, 70])
-    upper_yellow = np.array([35, 255, 255])
+    # Define range of red and yellow colors in HSV
+#     lower_red = np.array([155, 25, 50])
+#     upper_red = np.array([179, 255, 255])
+#     lower_yellow = np.array([0,142, 0])
+#     upper_yellow = np.array([179, 43, 255])
+#     # Threshold the HSV image
+#     mask_red = cv2.inRange(hsv, lower_red, upper_red)
+#     mask_yellow = cv2.inRange(hsv, lower_yellow, upper_yellow)
+#     mask = mask_red | mask_yellow
+
+
+    # Define range of white color in HSV (House test)
+    lower_white = np.array([0, 0, 0])
+    upper_white = np.array([179, 43, 255])
     # Threshold the HSV image
-    mask_red = cv2.inRange(hsv, lower_red, upper_red)
-    mask_yellow = cv2.inRange(hsv, lower_yellow, upper_yellow)
-    mask = mask_red | mask_yellow
+    mask = cv2.inRange(hsv, lower_white, upper_white)
+    
+    
     # Remove noise
     kernel_erode = np.ones((4,4), np.uint8)
     eroded_mask = cv2.erode(mask, kernel_erode, iterations=1)
@@ -305,56 +313,6 @@ def make_points(frame, line):
     return [[x1, y1, x2, y2]]
 
 
-############################
-# Test Functions
-############################
-def test_photo(file):
-    land_follower = HandCodedLaneFollower()
-    frame = cv2.imread(file)
-    combo_image = land_follower.follow_lane(frame)
-    show_image('final', combo_image, True)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-
-def test_video(video_file):
-    lane_follower = HandCodedLaneFollower()
-    cap = cv2.VideoCapture(video_file + '.avi')
-
-    # skip first second of video.
-    for i in range(3):
-        _, frame = cap.read()
-
-    video_type = cv2.VideoWriter_fourcc(*'XVID')
-    video_overlay = cv2.VideoWriter("%s_overlay.avi" % (video_file), video_type, 20.0, (320, 240))
-    try:
-        i = 0
-        while cap.isOpened():
-            _, frame = cap.read()
-            print('frame %s' % i )
-            combo_image= lane_follower.follow_lane(frame)
-            
-            cv2.imwrite("%s_%03d_%03d.png" % (video_file, i, lane_follower.curr_steering_angle), frame)
-            
-            cv2.imwrite("%s_overlay_%03d.png" % (video_file, i), combo_image)
-            video_overlay.write(combo_image)
-            cv2.namedWindow('image',cv2.WINDOW_NORMAL)
-            cv2.resizeWindow('image', 600,600)
-            cv2.imshow("Road with Lane line", combo_image)
-
-            i += 1
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-    finally:
-        cap.release()
-        video_overlay.release()
-        cv2.destroyAllWindows()
-
-
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
-    #test_video('/home/littleberrycar/DeepPiCar/driver/data/tmp/video01')
-    #test_photo('/home/littleberrycar/DeepPiCar/driver/data/route.png')
-    #test_photo(sys.argv[1])
-    #test_video(sys.argv[1])
