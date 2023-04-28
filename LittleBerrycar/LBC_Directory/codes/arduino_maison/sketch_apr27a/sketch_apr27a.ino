@@ -15,6 +15,7 @@ void setup(){
  
 }
 long duration, distance;
+
 void loop(){
   if (Serial.available() > 0){
     int data;
@@ -22,26 +23,21 @@ void loop(){
     //Serial.print("Hello, you sent me: ");
     //Serial.println(data);
     advance(data);
-    
   }
-if (compteur =50){
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);  
-  duration = pulseIn(echoPin, HIGH);
-  distance = duration/58.2;
-  if(distance<20)
-    {
-      advance(0);
-    }
+  if (compteur == 50){
+    digitalWrite(trigPin, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPin, LOW);  
+    duration = pulseIn(echoPin, HIGH);
+    distance = duration/58.2;
+    if(distance<20){advance(0);}
     compteur=0;
-  }
+   }
   compteur =compteur+1;
 }
 
-  
 void advance(int data) {
   int spe = 130;
   if (data == 1){
